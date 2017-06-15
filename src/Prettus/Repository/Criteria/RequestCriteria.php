@@ -156,7 +156,7 @@ class RequestCriteria implements CriteriaInterface
         }
 
         if ($with) {
-            $with = explode(';', $with);
+            $with = explode(',', $with);
             $model = $model->with($with);
         }
 
