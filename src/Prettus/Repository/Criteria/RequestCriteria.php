@@ -44,7 +44,7 @@ class RequestCriteria implements CriteriaInterface
         $with = $this->request->get(config('repository.criteria.params.with', 'with'), null);
         $sortedBy = !empty($sortedBy) ? $sortedBy : 'asc';
 
-        if ($search && is_array($fieldsSearchable) && count($fieldsSearchable)) {
+        if (isset($search) && is_array($fieldsSearchable) && count($fieldsSearchable)) {
 
             $searchFields = is_array($searchFields) || is_null($searchFields) ? $searchFields : explode(';', $searchFields);
             $fields = $this->parserFieldsSearch($fieldsSearchable, $searchFields);
@@ -114,7 +114,7 @@ class RequestCriteria implements CriteriaInterface
                 /*
                  * ex.
                  * products|description -> join products on current_table.product_id = products.id order by description
-                 * 
+                 *
                  * products:custom_id|products.description -> join products on current_table.custom_id = products.id order
                  * by products.description (in case both tables have same column name)
                  */
