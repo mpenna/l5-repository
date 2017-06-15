@@ -68,10 +68,18 @@ class RequestCriteria implements CriteriaInterface
                     $condition = trim(strtolower($condition));
 
                     if (isset($searchData[$field])) {
-                        $value = ($condition == "like" || $condition == "ilike") ? "%{$searchData[$field]}%" : $searchData[$field];
+                        if (trim(strtolower($searchData[$field])) != 'null') {
+                            $value = ($condition == "like" || $condition == "ilike") ? "%{$searchData[$field]}%" : $searchData[$field];
+                        } else {
+                            $value = 'null';
+                        }
                     } else {
                         if (!is_null($search)) {
-                            $value = ($condition == "like" || $condition == "ilike") ? "%{$search}%" : $search;
+                            if (trim(strtolower($search)) != 'null') {
+                                $value = ($condition == "like" || $condition == "ilike") ? "%{$search}%" : $search;
+                            } else {
+                                $value = 'null';
+                            }
                         }
                     }
 
@@ -85,22 +93,55 @@ class RequestCriteria implements CriteriaInterface
                     if ( $isFirstField || $modelForceAndWhere ) {
                         if (!is_null($value)) {
                             if(!is_null($relation)) {
-                                $query->whereHas($relation, function($query) use($field,$condition,$value) {
-                                    $query->where($field,$condition,$value);
+                                $query->whereHas($relation, function($query) use($field, $condition, $value) {
+                                    if ($value != 'null') {
+                                        $query->where($field, $condition, $value);
+                                    } else {
+                                        if ($condition == 'is') {
+                                            $query->whereNull($field);
+                                        } elseif ($condition == 'isnot') {
+                                            $query->whereNotNull($field);
+                                        }
+                                    }
                                 });
                             } else {
-                                $query->where($modelTableName.'.'.$field,$condition,$value);
+                                if ($value != 'null') {
+                                    $query->where($modelTableName.'.'.$field, $condition, $value);
+                                } else {
+                                    if ($condition == 'is') {
+                                        $query->whereNull($modelTableName.'.'.$field);
+                                    } elseif ($condition == 'isnot') {
+                                        $query->whereNotNull($modelTableName.'.'.$field);
+                                    }
+                                }
                             }
                             $isFirstField = false;
                         }
                     } else {
                         if (!is_null($value)) {
                             if(!is_null($relation)) {
-                                $query->orWhereHas($relation, function($query) use($field,$condition,$value) {
-                                    $query->where($field,$condition,$value);
+                                $query->orWhereHas($relation, function($query) use($field, $condition, $value) {
+                                    if ($value != 'null') {
+                                        $query->where($field, $condition, $value);
+                                    } else {
+                                        if ($condition == 'is') {
+                                            $query->whereNull($field);
+                                        } elseif ($condition == 'isnot') {
+                                            $query->whereNotNull($field);
+                                        }
+                                    }
                                 });
                             } else {
-                                $query->orWhere($modelTableName.'.'.$field, $condition, $value);
+                                if ($value != 'null') {
+                                    $query->orWhere($modelTableName.'.'.$field, $condition, $value);
+                                } else {
+                                    if ($condition == 'is') {
+                                        $query->orWhereNull($modelTableName.'.'.$field);
+                                    } elseif ($condition == 'isnot') {
+                                        $query->orWhereNotNull($modelTableName.'.'.$field);
+                                    }
+                                }
+
                             }
                         }
                     }
