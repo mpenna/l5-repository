@@ -259,12 +259,26 @@ abstract class BaseRepository implements RepositoryInterface, RepositoryCriteria
      * @param string|null $key
      *
      * @return \Illuminate\Support\Collection|array
+     * @deprecated since version laravel 5.2. Use the "pluck" method directly.
      */
     public function lists($column, $key = null)
     {
+        return $this->pluck($column, $key);
+    }
+
+    /**
+     * Retrieve data array for populate field select
+     *
+     * @param string      $column
+     * @param string|null $key
+     *
+     * @return \Illuminate\Support\Collection|array
+     */
+    public function pluck($column, $key = null)
+    {
         $this->applyCriteria();
 
-        return $this->model->lists($column, $key);
+        return $this->model->pluck($column, $key);
     }
 
     /**
@@ -402,18 +416,19 @@ abstract class BaseRepository implements RepositoryInterface, RepositoryCriteria
     /**
      * Retrieve all data of repository, paginated
      *
-     * @param null $limit
-     * @param array $columns
+     * @param null   $limit
+     * @param array  $columns
+     * @param string $pageName
      * @param string $method
      *
      * @return mixed
      */
-    public function paginate($limit = null, $columns = ['*'], $method = "paginate")
+    public function paginate($limit = null, $columns = ['*'], $pageName = 'page', $method = "paginate")
     {
         $this->applyCriteria();
         $this->applyScope();
         $limit = is_null($limit) ? config('repository.pagination.limit', 15) : $limit;
-        $results = $this->model->{$method}($limit, $columns);
+        $results = $this->model->{$method}($limit, $columns, $pageName);
         $results->appends(app('request')->query());
         $this->resetModel();
 
@@ -544,7 +559,10 @@ abstract class BaseRepository implements RepositoryInterface, RepositoryCriteria
             // we should pass data that has been casts by the model
             // to make sure data type are same because validator may need to use
             // this data to compare with data that fetch from database.
-            $attributes = $this->model->newInstance()->forceFill($attributes)->toArray();
+            $attributes = $this->model->newInstance()
+                ->forceFill($attributes)
+                ->makeVisible($this->model->getHidden())
+                ->toArray();
 
             $this->validator->with($attributes)->passesOrFail(ValidatorInterface::RULE_CREATE);
         }
@@ -576,7 +594,10 @@ abstract class BaseRepository implements RepositoryInterface, RepositoryCriteria
             // we should pass data that has been casts by the model
             // to make sure data type are same because validator may need to use
             // this data to compare with data that fetch from database.
-            $attributes = $this->model->newInstance()->forceFill($attributes)->toArray();
+            $attributes = $this->model->newInstance()
+                ->forceFill($attributes)
+                ->makeVisible($this->model->getHidden())
+                ->toArray();
 
             $this->validator->with($attributes)->setId($id)->passesOrFail(ValidatorInterface::RULE_UPDATE);
         }
@@ -711,18 +732,6 @@ abstract class BaseRepository implements RepositoryInterface, RepositoryCriteria
     }
 
     /**
-     * Add subselect queries to count the relations.
-     *
-     * @param  mixed $relations
-     * @return $this
-     */
-    public function withCount($relations)
-    {
-        $this->model = $this->model->withCount($relations);
-        return $this;
-    }
-
-    /**
      * Load relation with closure
      *
      * @param string $relation
@@ -751,12 +760,45 @@ abstract class BaseRepository implements RepositoryInterface, RepositoryCriteria
         return $this;
     }
 
+    /**
+     * Order collection by a given column
+     *
+     * @param string $column
+     * @param string $direction
+     *
+     * @return $this
+     */
     public function orderBy($column, $direction = 'asc')
     {
         $this->model = $this->model->orderBy($column, $direction);
 
         return $this;
     }
+
+    /**
+     * Add an "order by" clause for a timestamp to the query.
+     *
+     * @param string $column
+     *
+     * @return $this
+     */
+    public function latest($column = 'created_at')
+    {
+        return $this->orderBy($column, 'desc');
+    }
+
+    /**
+     * Add an "order by" clause for a timestamp to the query.
+     *
+     * @param string $column
+     *
+     * @return $this
+     */
+    public function oldest($column = 'created_at')
+    {
+        return $this->orderBy($column, 'asc');
+    }
+
 
     /**
      * Set visible fields

@@ -42,16 +42,17 @@ class RequestCriteria implements CriteriaInterface
         $orderBy = $this->request->get(config('repository.criteria.params.orderBy', 'orderBy'), null);
         $sortedBy = $this->request->get(config('repository.criteria.params.sortedBy', 'sortedBy'), 'asc');
         $with = $this->request->get(config('repository.criteria.params.with', 'with'), null);
+        $and = $this->request->get(config('repository.criteria.params.and', 'and'), null);
         $sortedBy = !empty($sortedBy) ? $sortedBy : 'asc';
 
-        if ($search && is_array($fieldsSearchable) && count($fieldsSearchable)) {
+        if (isset($search) && is_array($fieldsSearchable) && count($fieldsSearchable)) {
 
             $searchFields = is_array($searchFields) || is_null($searchFields) ? $searchFields : explode(';', $searchFields);
             $fields = $this->parserFieldsSearch($fieldsSearchable, $searchFields);
             $isFirstField = true;
             $searchData = $this->parserSearchData($search);
             $search = $this->parserSearchValue($search);
-            $modelForceAndWhere = false;
+            $modelForceAndWhere = $and ? $and === 'true' : false;
 
             $model = $model->where(function ($query) use ($fields, $search, $searchData, $isFirstField, $modelForceAndWhere) {
                 /** @var Builder $query */
@@ -68,10 +69,18 @@ class RequestCriteria implements CriteriaInterface
                     $condition = trim(strtolower($condition));
 
                     if (isset($searchData[$field])) {
-                        $value = ($condition == "like" || $condition == "ilike") ? "%{$searchData[$field]}%" : $searchData[$field];
+                        if (trim(strtolower($searchData[$field])) != 'null') {
+                            $value = ($condition == "like" || $condition == "ilike") ? "%{$searchData[$field]}%" : $searchData[$field];
+                        } else {
+                            $value = 'null';
+                        }
                     } else {
                         if (!is_null($search)) {
-                            $value = ($condition == "like" || $condition == "ilike") ? "%{$search}%" : $search;
+                            if (trim(strtolower($search)) != 'null') {
+                                $value = ($condition == "like" || $condition == "ilike") ? "%{$search}%" : $search;
+                            } else {
+                                $value = 'null';
+                            }
                         }
                     }
 
@@ -85,22 +94,55 @@ class RequestCriteria implements CriteriaInterface
                     if ( $isFirstField || $modelForceAndWhere ) {
                         if (!is_null($value)) {
                             if(!is_null($relation)) {
-                                $query->whereHas($relation, function($query) use($field,$condition,$value) {
-                                    $query->where($field,$condition,$value);
+                                $query->whereHas($relation, function($query) use($field, $condition, $value) {
+                                    if ($value != 'null') {
+                                        $query->where($field, $condition, $value);
+                                    } else {
+                                        if ($condition == 'is') {
+                                            $query->whereNull($field);
+                                        } elseif ($condition == 'isnot') {
+                                            $query->whereNotNull($field);
+                                        }
+                                    }
                                 });
                             } else {
-                                $query->where($modelTableName.'.'.$field,$condition,$value);
+                                if ($value != 'null') {
+                                    $query->where($modelTableName.'.'.$field, $condition, $value);
+                                } else {
+                                    if ($condition == 'is') {
+                                        $query->whereNull($modelTableName.'.'.$field);
+                                    } elseif ($condition == 'isnot') {
+                                        $query->whereNotNull($modelTableName.'.'.$field);
+                                    }
+                                }
                             }
                             $isFirstField = false;
                         }
                     } else {
                         if (!is_null($value)) {
                             if(!is_null($relation)) {
-                                $query->orWhereHas($relation, function($query) use($field,$condition,$value) {
-                                    $query->where($field,$condition,$value);
+                                $query->orWhereHas($relation, function($query) use($field, $condition, $value) {
+                                    if ($value != 'null') {
+                                        $query->where($field, $condition, $value);
+                                    } else {
+                                        if ($condition == 'is') {
+                                            $query->whereNull($field);
+                                        } elseif ($condition == 'isnot') {
+                                            $query->whereNotNull($field);
+                                        }
+                                    }
                                 });
                             } else {
-                                $query->orWhere($modelTableName.'.'.$field, $condition, $value);
+                                if ($value != 'null') {
+                                    $query->orWhere($modelTableName.'.'.$field, $condition, $value);
+                                } else {
+                                    if ($condition == 'is') {
+                                        $query->orWhereNull($modelTableName.'.'.$field);
+                                    } elseif ($condition == 'isnot') {
+                                        $query->orWhereNotNull($modelTableName.'.'.$field);
+                                    }
+                                }
+
                             }
                         }
                     }
@@ -114,7 +156,7 @@ class RequestCriteria implements CriteriaInterface
                 /*
                  * ex.
                  * products|description -> join products on current_table.product_id = products.id order by description
-                 * 
+                 *
                  * products:custom_id|products.description -> join products on current_table.custom_id = products.id order
                  * by products.description (in case both tables have same column name)
                  */
@@ -156,7 +198,7 @@ class RequestCriteria implements CriteriaInterface
         }
 
         if ($with) {
-            $with = explode(';', $with);
+            $with = explode(',', $with);
             $model = $model->with($with);
         }
 
