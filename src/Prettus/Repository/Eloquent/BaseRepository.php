@@ -27,7 +27,6 @@ use Prettus\Validator\Exceptions\ValidatorException;
  */
 abstract class BaseRepository implements RepositoryInterface, RepositoryCriteriaInterface
 {
-
     /**
      * @var Application
      */
@@ -96,19 +95,11 @@ abstract class BaseRepository implements RepositoryInterface, RepositoryCriteria
     }
 
     /**
-     *
+     * Boot up the repository.
      */
     public function boot()
     {
-
-    }
-
-    /**
-     * @throws RepositoryException
-     */
-    public function resetModel()
-    {
-        $this->makeModel();
+        //
     }
 
     /**
@@ -154,17 +145,11 @@ abstract class BaseRepository implements RepositoryInterface, RepositoryCriteria
     }
 
     /**
-     * Set Presenter
-     *
-     * @param $presenter
-     *
-     * @return $this
+     * @throws RepositoryException
      */
-    public function setPresenter($presenter)
+    public function resetModel()
     {
-        $this->makePresenter($presenter);
-
-        return $this;
+        $this->makeModel();
     }
 
     /**
@@ -229,28 +214,39 @@ abstract class BaseRepository implements RepositoryInterface, RepositoryCriteria
     }
 
     /**
-     * Get Searchable Fields
+     * Wrapper result data
      *
-     * @return array
+     * @param mixed $result
+     *
+     * @return mixed
      */
-    public function getFieldsSearchable()
+    public function parserResult($result)
     {
-        return $this->fieldSearchable;
+        if ($this->presenter instanceof PresenterInterface) {
+
+            if ($result instanceof Collection || $result instanceof LengthAwarePaginator) {
+                $result->each(function ($model) {
+                    if ($model instanceof Presentable) {
+                        $model->setPresenter($this->presenter);
+                    }
+
+                    return $model;
+                });
+            } elseif ($result instanceof Presentable) {
+                $result = $result->setPresenter($this->presenter);
+            }
+
+            if (!$this->skipPresenter) {
+                return $this->presenter->present($result);
+            }
+        }
+
+        return $result;
     }
 
-    /**
-     * Query Scope
-     *
-     * @param \Closure $scope
-     *
-     * @return $this
-     */
-    public function scopeQuery(\Closure $scope)
-    {
-        $this->scopeQuery = $scope;
-
-        return $this;
-    }
+    /* ************************************************** */
+    /* RepositoryInterface Methods                        */
+    /* ************************************************** */
 
     /**
      * Retrieve data array for populate field select
@@ -331,7 +327,6 @@ abstract class BaseRepository implements RepositoryInterface, RepositoryCriteria
 
         return $this->parserResult($results);
     }
-
 
     /**
      * Retrieve first data of repository
@@ -689,63 +684,6 @@ abstract class BaseRepository implements RepositoryInterface, RepositoryCriteria
     }
 
     /**
-     * Check if entity has relation
-     *
-     * @param string $relation
-     *
-     * @return $this
-     */
-    public function has($relation)
-    {
-        $this->model = $this->model->has($relation);
-
-        return $this;
-    }
-
-    /**
-     * Load relations
-     *
-     * @param array|string $relations
-     *
-     * @return $this
-     */
-    public function with($relations)
-    {
-        $this->model = $this->model->with($relations);
-
-        return $this;
-    }
-
-    /**
-     * Load relation with closure
-     *
-     * @param string $relation
-     * @param closure $closure
-     *
-     * @return $this
-     */
-    public function whereHas($relation, $closure)
-    {
-        $this->model = $this->model->whereHas($relation, $closure);
-
-        return $this;
-    }
-
-    /**
-     * Set hidden fields
-     *
-     * @param array $fields
-     *
-     * @return $this
-     */
-    public function hidden(array $fields)
-    {
-        $this->model->setHidden($fields);
-
-        return $this;
-    }
-
-    /**
      * Order collection by a given column
      *
      * @param string $column
@@ -784,6 +722,75 @@ abstract class BaseRepository implements RepositoryInterface, RepositoryCriteria
         return $this->orderBy($column, 'asc');
     }
 
+    /**
+     * Check if entity has relation
+     *
+     * @param string $relation
+     *
+     * @return $this
+     */
+    public function has($relation)
+    {
+        $this->model = $this->model->has($relation);
+
+        return $this;
+    }
+
+    /**
+     * Load relation with closure
+     *
+     * @param string $relation
+     * @param closure $closure
+     *
+     * @return $this
+     */
+    public function whereHas($relation, $closure)
+    {
+        $this->model = $this->model->whereHas($relation, $closure);
+
+        return $this;
+    }
+
+    /**
+     * Load relations
+     *
+     * @param array|string $relations
+     *
+     * @return $this
+     */
+    public function with($relations)
+    {
+        $this->model = $this->model->with($relations);
+
+        return $this;
+    }
+
+    /**
+     * Add subselect queries to count the relations.
+     *
+     * @param  mixed  $relations
+     * @return $this
+     */
+    public function withCount($relations)
+    {
+        $this->model = $this->model->withCount($relations);
+
+        return $this;
+    }
+
+    /**
+     * Set hidden fields
+     *
+     * @param array $fields
+     *
+     * @return $this
+     */
+    public function hidden(array $fields)
+    {
+        $this->model->setHidden($fields);
+
+        return $this;
+    }
 
     /**
      * Set visible fields
@@ -798,6 +805,74 @@ abstract class BaseRepository implements RepositoryInterface, RepositoryCriteria
 
         return $this;
     }
+
+    /**
+     * Query Scope
+     *
+     * @param \Closure $scope
+     *
+     * @return $this
+     */
+    public function scopeQuery(\Closure $scope)
+    {
+        $this->scopeQuery = $scope;
+
+        return $this;
+    }
+
+    /**
+     * Reset Query Scope
+     *
+     * @return $this
+     */
+    public function resetScope()
+    {
+        $this->scopeQuery = null;
+
+        return $this;
+    }
+
+    /**
+     * Get Searchable Fields
+     *
+     * @return array
+     */
+    public function getFieldsSearchable()
+    {
+        return $this->fieldSearchable;
+    }
+
+    /**
+     * Set Presenter
+     *
+     * @param $presenter
+     *
+     * @return $this
+     */
+    public function setPresenter($presenter)
+    {
+        $this->makePresenter($presenter);
+
+        return $this;
+    }
+
+    /**
+     * Skip Presenter Wrapper
+     *
+     * @param bool $status
+     *
+     * @return $this
+     */
+    public function skipPresenter($status = true)
+    {
+        $this->skipPresenter = $status;
+
+        return $this;
+    }
+
+    /* ************************************************** */
+    /* RepositoryCriteriaInterface Methods                */
+    /* ************************************************** */
 
     /**
      * Push Criteria for filter the query
@@ -896,17 +971,9 @@ abstract class BaseRepository implements RepositoryInterface, RepositoryCriteria
         return $this;
     }
 
-    /**
-     * Reset Query Scope
-     *
-     * @return $this
-     */
-    public function resetScope()
-    {
-        $this->scopeQuery = null;
-
-        return $this;
-    }
+    /* ************************************************** */
+    /* Protected Methods (Overridable)                    */
+    /* ************************************************** */
 
     /**
      * Apply scope in current Query
@@ -964,50 +1031,5 @@ abstract class BaseRepository implements RepositoryInterface, RepositoryCriteria
                 $this->model = $this->model->where($field, '=', $value);
             }
         }
-    }
-
-    /**
-     * Skip Presenter Wrapper
-     *
-     * @param bool $status
-     *
-     * @return $this
-     */
-    public function skipPresenter($status = true)
-    {
-        $this->skipPresenter = $status;
-
-        return $this;
-    }
-
-    /**
-     * Wrapper result data
-     *
-     * @param mixed $result
-     *
-     * @return mixed
-     */
-    public function parserResult($result)
-    {
-        if ($this->presenter instanceof PresenterInterface) {
-
-            if ($result instanceof Collection || $result instanceof LengthAwarePaginator) {
-                $result->each(function ($model) {
-                    if ($model instanceof Presentable) {
-                        $model->setPresenter($this->presenter);
-                    }
-
-                    return $model;
-                });
-            } elseif ($result instanceof Presentable) {
-                $result = $result->setPresenter($this->presenter);
-            }
-
-            if (!$this->skipPresenter) {
-                return $this->presenter->present($result);
-            }
-        }
-
-        return $result;
     }
 }

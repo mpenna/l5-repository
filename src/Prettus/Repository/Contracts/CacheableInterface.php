@@ -42,7 +42,6 @@ interface CacheableInterface
      */
     public function getCacheMinutes();
 
-
     /**
      * Skip Cache
      *

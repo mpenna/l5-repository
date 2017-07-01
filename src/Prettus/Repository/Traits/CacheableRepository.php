@@ -14,7 +14,6 @@ use Exception;
  */
 trait CacheableRepository
 {
-
     /**
      * @var CacheRepository
      */

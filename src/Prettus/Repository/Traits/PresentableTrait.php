@@ -1,5 +1,4 @@
 <?php
-
 namespace Prettus\Repository\Traits;
 
 use Illuminate\Support\Arr;
@@ -11,7 +10,6 @@ use Prettus\Repository\Contracts\PresenterInterface;
  */
 trait PresentableTrait
 {
-
     /**
      * @var PresenterInterface
      */

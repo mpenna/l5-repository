@@ -7,7 +7,6 @@ namespace Prettus\Repository\Contracts;
  */
 interface RepositoryInterface
 {
-
     /**
      * Retrieve data array for populate field select
      *
@@ -47,7 +46,7 @@ interface RepositoryInterface
      * @param $attributes
      * @return mixed
      */
-     public function syncWithoutDetaching($id, $relation, $attributes);
+    public function syncWithoutDetaching($id, $relation, $attributes);
 
     /**
      * Retrieve all data of repository
@@ -57,6 +56,33 @@ interface RepositoryInterface
      * @return mixed
      */
     public function all($columns = ['*']);
+
+    /**
+     * Retrieve first data of repository
+     *
+     * @param array $columns
+     *
+     * @return mixed
+     */
+    public function first($columns = ['*']);
+
+    /**
+     * Retrieve first data of repository, or return new Entity
+     *
+     * @param array $attributes
+     *
+     * @return mixed
+     */
+    public function firstOrNew(array $attributes = []);
+
+    /**
+     * Retrieve first data of repository, or create new Entity
+     *
+     * @param array $attributes
+     *
+     * @return mixed
+     */
+    public function firstOrCreate(array $attributes = []);
 
     /**
      * Retrieve all data of repository, paginated
@@ -208,16 +234,15 @@ interface RepositoryInterface
      */
     public function oldest($column = 'created_at');
 
-
     /**
-     * Load relations
+     * Check if entity has relation
      *
-     * @param $relations
+     * @param string $relation
      *
      * @return $this
      */
-    public function with($relations);
-    
+    public function has($relation);
+
     /**
      * Load relation with closure
      *
@@ -227,7 +252,16 @@ interface RepositoryInterface
      * @return $this
      */
     public function whereHas($relation, $closure);
-    
+
+    /**
+     * Load relations
+     *
+     * @param $relations
+     *
+     * @return $this
+     */
+    public function with($relations);
+
     /**
      * Add subselect queries to count the relations.
      *
@@ -294,22 +328,4 @@ interface RepositoryInterface
      * @return $this
      */
     public function skipPresenter($status = true);
-
-    /**
-     * Retrieve first data of repository, or return new Entity
-     *
-     * @param array $attributes
-     *
-     * @return mixed
-     */
-    public function firstOrNew(array $attributes = []);
-
-    /**
-     * Retrieve first data of repository, or create new Entity
-     *
-     * @param array $attributes
-     *
-     * @return mixed
-     */
-    public function firstOrCreate(array $attributes = []);
 }

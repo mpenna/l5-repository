@@ -23,7 +23,6 @@ class RequestCriteria implements CriteriaInterface
         $this->request = $request;
     }
 
-
     /**
      * Apply criteria in query repository
      *
@@ -252,7 +251,6 @@ class RequestCriteria implements CriteriaInterface
 
         return $search;
     }
-
 
     protected function parserFieldsSearch(array $fields = [], array $searchFields = null)
     {
