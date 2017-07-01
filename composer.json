@@ -16,10 +16,6 @@
     "wiki":"https://github.com/andersao/l5-repository",
     "source":"https://github.com/andersao/l5-repository"
   },
-    "repositories": [{
-        "type": "vcs",
-        "url": "https://github.com/mpenna/laravel-validator"
-    }],
   "require": {
     "illuminate/http": "~5.0",
     "illuminate/config": "~5.0",
@@ -28,7 +24,7 @@
     "illuminate/pagination": "~5.0",
     "illuminate/console": "~5.0",
     "illuminate/filesystem": "~5.0",
-    "prettus/laravel-validation": "dev-develop"
+    "prettus/laravel-validation": "1.1.*"
   },
   "autoload": {
     "psr-4": {
